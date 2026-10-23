@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n php,web -c yellow,cyan \"php -S 127.0.0.1:8080 -t backend\" \"vite\"",
-    "php": "php -S 127.0.0.1:8080 -t backend",
+    "dev": "concurrently -n api,web -c yellow,cyan \"node server/index.js\" \"vite\"",
     "server": "node server/index.js",
+    "start": "node server/index.js",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview"

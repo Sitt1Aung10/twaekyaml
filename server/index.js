@@ -1,6 +1,7 @@
 import express from 'express';
+import path from 'node:path';
 import { HttpError } from './http.js';
-import { createMeeting, getMeeting, getResponses, saveResponse } from './store.js';
+import { confirmDate, createMeeting, getMeeting, getResponses, saveResponse, shareLocation, voteForPlace } from './store.js';
 
 const app = express();
 const port = Number(process.env.API_PORT) || 8787;
@@ -56,6 +57,25 @@ app.post('/api/meetings/:code/responses', async (req, res) => {
   } catch (error) {
     sendError(res, error);
   }
+});
+
+app.post('/api/meetings/:code/votes', async (req, res) => {
+  try { res.json(await voteForPlace(req.params.code, req.body)); } catch (error) { sendError(res, error); }
+});
+
+app.post('/api/meetings/:code/confirmation', async (req, res) => {
+  try { res.json(await confirmDate(req.params.code, req.body)); } catch (error) { sendError(res, error); }
+});
+
+app.post('/api/meetings/:code/locations', async (req, res) => {
+  try { res.json(await shareLocation(req.params.code, req.body)); } catch (error) { sendError(res, error); }
+});
+
+const distDir = path.join(process.cwd(), 'dist');
+app.use(express.static(distDir));
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/')) return next();
+  res.sendFile(path.join(distDir, 'index.html'));
 });
 
 app.listen(port, () => {

@@ -14,7 +14,6 @@ export default function Organizer() {
   const [lookup, setLookup] = useState('');
   const [lookupError, setLookupError] = useState('');
   const [creating, setCreating] = useState(false);
-  const [decidedPlace, setDecidedPlace] = useState('');
   const navigate = useNavigate();
   const [created, setCreated] = useState(null);
   const [createError, setCreateError] = useState('');
@@ -57,7 +56,7 @@ export default function Organizer() {
     setCreating(true);
     setCreateError('');
     try {
-      const meeting = await createMeeting(session, decidedPlace.trim());
+      const meeting = await createMeeting(session);
       const link = `${window.location.origin}${meeting.joinPath}`;
       setCreated({ ...meeting, link });
       setCopied('');
@@ -217,16 +216,6 @@ export default function Organizer() {
 
           <div className="stack create-block">
             <h3>အခန်းအသစ် ဖွင့်ရန်</h3>
-            <div className="decide-row">
-              <p>တွေ့ဆုံမည့် နေရာ ဆုံးဖြတ်ပြီးပြီလား</p>
-              <input
-                id="decided-place"
-                value={decidedPlace}
-                placeholder="ဆုံးဖြတ်ထားသော နေရာ"
-                aria-label="ဆုံးဖြတ်ထားသော နေရာ"
-                onChange={(event) => setDecidedPlace(event.target.value)}
-              />
-            </div>
             <button type="button" className="btn" onClick={onCreate} disabled={creating}>
               {creating ? 'ဖွင့်နေပါတယ်…' : 'အခန်းအသစ် ဖွင့်မည်'}
             </button>
@@ -241,7 +230,7 @@ export default function Organizer() {
                 <p className="created-label">အခန်းကုဒ်</p>
                 <p className="created-code">{created.code}</p>
                  <p className="hint" style={{ color: 'red',fontSize : "10px" }}>
-              သတိပေးချက် - တစ်ပတ်ကြာရင် ကုဒ်သက်တမ်းကုန်ပြီး အချက်အလက်အားလုံး ပျက်ပါမယ်။
+              သတိပေးချက် - ရက် ၉၀ ကြာရင် ကုဒ်သက်တမ်းကုန်ပြီး အချက်အလက်အားလုံး ပျက်ပါမယ်။
             </p>
                 <button type="button" className="btn secondary" onClick={() => copy('code', created.code)}>
                   {copied === 'code' ? 'ကူးပြီးပါပြီ' : 'ကုဒ်ကူးမည်'}

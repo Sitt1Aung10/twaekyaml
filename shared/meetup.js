@@ -24,62 +24,6 @@ export const STYLES = [
   { id: 'show', label: 'Show ရှိုး' },
 ];
 
-export const STYLE_GUIDES = {
-  karaoke: {
-    intro: 'ကာရာအိုကေဆိုရင် ဒီနေရာတွေက လူသိများတဲ့ ဧရိယာတွေ ဖြစ်ပါတယ်။',
-    places: [
-      'Junction City ရှိ ကာရာအိုကေ ဧရိယာ',
-      'Myanmar Plaza ရှိ ကာရာအိုကေ ဧရိယာ',
-      'လှည်းတန်းရှိ ကာရာအိုကေ ဧရိယာ',
-    ],
-  },
-  zoo: {
-    intro: 'တိရစ္ဆာန်ရုံသွားမယ်ဆိုရင် ဒီဥယျာဉ်တွေကို စဉ်းစားနိုင်ပါတယ်။',
-    places: [
-      'ရန်ကုန်တိရစ္ဆာန်ဥယျာဉ်',
-      'နေပြည်တော်တိရစ္ဆာန်ဥယျာဉ်',
-      'မန္တလေးတိရစ္ဆာန်ဥယျာဉ်',
-      'လှော်ကား တောရိုင်းတိရစ္ဆာန်ဥယျာဉ်',
-    ],
-  },
-  staycation: {
-    intro: 'စတေးကေးရှင်းအတွက် နားခိုလေ့ရှိတဲ့ နေရာတွေ ဖြစ်ပါတယ်။',
-    places: ['အင်းလေး', 'ပုဂံ', 'ငွေဆောင်', 'ချောင်းသာ'],
-  },
-  camp: {
-    intro: 'စခန်းချဖို့ ဒီဒေသတွေမှာ သွားလေ့ရှိပါတယ်။',
-    places: ['ကလော', 'အင်းလေးဒေသ', 'ငွေဆောင်', 'ချောင်းသာ'],
-  },
-  bar: {
-    intro: 'ဘားသွားမယ်ဆိုရင် ရန်ကုန်မှာ လူသိများတဲ့ ဒီနေရာတွေကို စဉ်းစားနိုင်ပါတယ်။',
-    places: ['The 7th Joint', 'Yangon Yangon Bar', 'Gekko'],
-  },
-  coffee: {
-    intro: 'ကော်ဖီဆိုင်အတွက် ဒီဆိုင်တွေကို စဉ်းစားနိုင်ပါတယ်။',
-    places: ['Yangon Bakehouse', 'Coffee Circles', 'Bar Boon'],
-  },
-  restaurant: {
-    intro: 'စားသောက်ဆိုင်အတွက် ဒီဆိုင်တွေက လူသိများပါတယ်။',
-    places: ['Shan Yoe Yar', 'Aung Thukha', '999 Shan Noodle Shop'],
-  },
-  fine_dining: {
-    intro: 'ဖိုင်းဒိုင်နင်းအတွက် ဒီဆိုင်တွေကို စဉ်းစားနိုင်ပါတယ်။',
-    places: ["Sharky's", 'Gekko', 'Port Autonomy'],
-  },
-  tea_house: {
-    intro: 'လက်ဖက်ရည်ဆိုင်အတွက် ဒီနေရာတွေက လူသိများပါတယ်။',
-    places: ['Rangoon Tea House', 'Feel Myanmar Food', 'Lucky Seven Tea House'],
-  },
-  movie: {
-    intro: 'ရုပ်ရှင်ကြည့်မယ်ဆိုရင် ဒီရုံတွေကို စဉ်းစားနိုင်ပါတယ်။',
-    places: ['JCGV Junction City', 'Mingalar Cinemas', 'Junction Square ရုပ်ရှင်ရုံ'],
-  },
-  show: {
-    intro: 'ရှိုးကြည့်မယ်ဆိုရင် ယဉ်ကျေးမှုဖျော်ဖြေပွဲတွေနဲ့ လူသိများတဲ့ ဒီနေရာတွေကို စဉ်းစားနိုင်ပါတယ်။',
-    places: ['ကရဝိက်နန်းတော် ယဉ်ကျေးမှုဖျော်ဖြေပွဲ', 'ရန်ကုန် အမျိုးသားဇာတ်ရုံ'],
-  },
-};
-
 const MONTHS = [
   'ဇန်နဝါရီ',
   'ဖေဖော်ဝါရီ',
@@ -207,8 +151,8 @@ export function formatClock(hhmm) {
 export function formatAvailability(list) {
   if (!Array.isArray(list) || list.length === 0) return '';
   return [...list]
-    .sort((a, b) => dayIndex(a.day) - dayIndex(b.day))
-    .map((item) => `${dayLabel(item.day)} ${formatClock(item.start)}–${formatClock(item.end)}`)
+    .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || dayIndex(a.day) - dayIndex(b.day))
+    .map((item) => `${item.date ? new Intl.DateTimeFormat('my-MM', { dateStyle: 'medium' }).format(new Date(`${item.date}T12:00:00`)) : dayLabel(item.day)} ${formatClock(item.start)}–${formatClock(item.end)}`)
     .join('၊ ');
 }
 
@@ -231,20 +175,22 @@ export function validateAvailability(list) {
   const seen = new Set();
   const value = [];
   for (const item of list) {
-    if (!item || !DAYS.some((day) => day.id === item.day)) {
+    if (!item || (!item.date && !DAYS.some((day) => day.id === item.day))) {
       return { ok: false, message: MESSAGES.availabilityDay };
     }
-    if (seen.has(item.day)) {
+    const key = item.date || item.day;
+    if (item.date && !/^\d{4}-\d{2}-\d{2}$/.test(item.date)) return { ok: false, message: MESSAGES.availabilityDay };
+    if (seen.has(key)) {
       return { ok: false, message: MESSAGES.availabilityDuplicate };
     }
-    seen.add(item.day);
+    seen.add(key);
     const start = normalizeTime(item.start);
     const end = normalizeTime(item.end);
     if (!start || !end) return { ok: false, message: MESSAGES.availabilityTime };
     if (start >= end) return { ok: false, message: MESSAGES.availabilityRange };
-    value.push({ day: item.day, start, end });
+    value.push(item.date ? { date: item.date, start, end } : { day: item.day, start, end });
   }
-  value.sort((a, b) => dayIndex(a.day) - dayIndex(b.day));
+  value.sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || dayIndex(a.day) - dayIndex(b.day));
   return { ok: true, value };
 }
 
@@ -366,8 +312,9 @@ function effectiveInterval(start, end, arrival) {
   return { start: from, end };
 }
 
-function slotLabel(dayId, start, end) {
-  return `${dayLabel(dayId)} ${formatClock(minutesToClock(start))}–${formatClock(minutesToClock(end))}`;
+function slotLabel(date, start, end) {
+  const dateLabel = new Intl.DateTimeFormat('my-MM', { dateStyle: 'full' }).format(new Date(`${date}T12:00:00`));
+  return `${dateLabel} ${formatClock(minutesToClock(start))}–${formatClock(minutesToClock(end))}`;
 }
 
 const NOON_MINUTES = 12 * 60;
@@ -397,8 +344,8 @@ function summarizeArrivals(responses, overlap) {
   return { text, time: latest };
 }
 
-function memberCircle(response, dayId) {
-  const slot = response.availability?.find((item) => item.day === dayId);
+function memberCircle(response, date) {
+  const slot = response.availability?.find((item) => item.date === date);
   if (!slot) return null;
   return effectiveInterval(
     timeToMinutes(slot.start),
@@ -419,12 +366,13 @@ function recommendTime(responses) {
   const total = responses.length;
   const shared = [];
   const partial = [];
+  const dates = [...new Set(responses.flatMap((response) => (response.availability || []).map((item) => item.date).filter(Boolean)))].sort();
 
-  DAYS.forEach((day, index) => {
+  dates.forEach((date) => {
     const circles = [];
     let complete = true;
     for (const response of responses) {
-      const circle = memberCircle(response, day.id);
+      const circle = memberCircle(response, date);
       if (!circle) {
         complete = false;
         continue;
@@ -436,8 +384,7 @@ function recommendTime(responses) {
       const common = intersectCircles(circles);
       if (common) {
         shared.push({
-          dayId: day.id,
-          dayIndex: index,
+          date,
           count: total,
           ids: circles.map((circle) => circle.id),
           ...common,
@@ -446,7 +393,7 @@ function recommendTime(responses) {
     }
 
     const best = bestWindow(circles);
-    if (best) partial.push({ dayId: day.id, dayIndex: index, ...best });
+    if (best) partial.push({ date, ...best });
   });
 
   const everyone = shared.length > 0;
@@ -456,7 +403,8 @@ function recommendTime(responses) {
       everyone: false,
       count: 0,
       total,
-      text: 'ရွေးထားသော အချိန်ထဲမှာ လူတိုင်းဆုံတဲ့ အပိုင်း မရှိသေးပါ။',
+      text: 'ရွေးထားသော ပြက္ခဒိန်ရက်များထဲမှာ ဆုံနိုင်သော အချိန် မရှိသေးပါ။',
+      unavailable: total,
     };
   }
 
@@ -464,29 +412,26 @@ function recommendTime(responses) {
     if (b.count !== a.count) return b.count - a.count;
     const lengthDiff = b.end - b.start - (a.end - a.start);
     if (lengthDiff !== 0) return lengthDiff;
-    if (a.dayIndex !== b.dayIndex) return a.dayIndex - b.dayIndex;
+    if (a.date !== b.date) return a.date.localeCompare(b.date);
     return a.start - b.start;
   });
 
   const best = candidates[0];
-  const slot = slotLabel(best.dayId, best.start, best.end);
+  const slot = slotLabel(best.date, best.start, best.end);
+  const unavailable = total - best.count;
   let text;
   if (everyone) {
-    const others = candidates.slice(1).map((candidate) => slotLabel(candidate.dayId, candidate.start, candidate.end));
     text = `လူအားလုံး (${toMyanmarDigits(total)} ယောက်) ${slot} မှာ တွေ့နိုင်ပါတယ်။`;
-    if (others.length) {
-      text += ` လူအားလုံး ဆုံတဲ့ နောက်ထပ်အချိန်က ${joinList(others)} ဖြစ်ပါတယ်။`;
-    }
   } else {
     const alternate = candidates.find(
       (candidate) =>
-        candidate.dayId !== best.dayId &&
+        candidate.date !== best.date &&
         candidate.count === best.count &&
         candidate.end - candidate.start === best.end - best.start,
     );
     text = `လူအားလုံး တစ်ချိန်တည်း မဆုံပါ။ အများဆုံးဆုံတဲ့အချိန်က ${slot} ဖြစ်ပြီး ${toMyanmarDigits(best.count)} ယောက် တက်နိုင်ပါတယ်။`;
     if (alternate) {
-      text += ` လူအရေအတွက်တူတဲ့ နောက်ထပ်အချိန်က ${slotLabel(alternate.dayId, alternate.start, alternate.end)} ဖြစ်ပါတယ်။`;
+      text += ` လူအရေအတွက်တူတဲ့ နောက်ထပ်အချိန်က ${slotLabel(alternate.date, alternate.start, alternate.end)} ဖြစ်ပါတယ်။`;
     }
   }
 
@@ -494,7 +439,8 @@ function recommendTime(responses) {
     everyone,
     count: best.count,
     total,
-    day: best.dayId,
+    date: best.date,
+    unavailable,
     start: minutesToClock(best.start),
     end: minutesToClock(best.end),
     startMinutes: best.start,
@@ -504,52 +450,7 @@ function recommendTime(responses) {
   };
 }
 
-function catalogForStyle(style, catalog) {
-  return (Array.isArray(catalog) ? catalog : []).filter(
-    (place) => place && place.style === style && (!place.city || place.city === 'Yangon'),
-  );
-}
-
-function venuesForStyle(style, catalog) {
-  const rows = catalogForStyle(style, catalog);
-  if (!rows.length) {
-    const names = STYLE_GUIDES[style]?.places ?? [];
-    return {
-      intro: STYLE_GUIDES[style]?.intro ?? '',
-      townships: names.length
-        ? [{
-            township: '',
-            townshipMm: '',
-            places: names.map((name) => ({ name, address: '', detail: '' })),
-          }]
-        : [],
-    };
-  }
-
-  const groups = new Map();
-  for (const place of rows) {
-    const key = place.township || '';
-    if (!groups.has(key)) {
-      groups.set(key, {
-        township: place.township || '',
-        townshipMm: place.townshipMm || '',
-        places: [],
-      });
-    }
-    groups.get(key).places.push({
-      name: place.name,
-      address: place.address || '',
-      detail: place.detail || '',
-    });
-  }
-
-  return {
-    intro: 'ရန်ကုန်မြို့နယ်အလိုက် လူသိများတဲ့ နေရာတွေပါ။',
-    townships: [...groups.values()],
-  };
-}
-
-export function buildSuggestion(responses, catalog = []) {
+export function buildSuggestion(responses) {
   if (!Array.isArray(responses) || responses.length === 0) return null;
   const counts = new Map(STYLES.map((style) => [style.id, 0]));
   for (const response of responses) {
@@ -594,16 +495,6 @@ export function buildSuggestion(responses, catalog = []) {
     votes,
     tied,
     headline,
-    venues: winners.map((winner) => {
-      const guide = venuesForStyle(winner.style, catalog);
-      return {
-        style: winner.style,
-        label: winner.label,
-        intro: guide.intro,
-        townships: guide.townships,
-        places: guide.townships.flatMap((group) => group.places.map((place) => place.name)),
-      };
-    }),
     mentionedPlaces,
     time,
     arrival: { text: arrival.text },

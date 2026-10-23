@@ -7,14 +7,14 @@ import {
   normalizeJoinCode,
   validateResponse,
 } from '../../shared/meetup.js';
-import { getResponses, saveResponse } from '../api.js';
+import { getResponses, saveResponse, shareLocation, voteForPlace } from '../api.js';
 import AppShell from './AppShell.jsx';
 import ClockSelect from './ClockSelect.jsx';
 import Assistant from './Assistant.jsx';
 import Organizer from './Organizer.jsx';
 import TimeModal from './TimeModal.jsx';
 
-const idleRoom = { status: 'idle', code: '', fixedPlace: '', responses: [], suggestion: null, message: '' };
+const idleRoom = { status: 'idle', code: '', fixedPlace: '', responses: [], suggestion: null, placeVotes: [], confirmedDate: '', confirmedSlot: null, locations: [], message: '' };
 
 export default function SurveyPage() {
   const { code: rawCode } = useParams();
@@ -34,6 +34,10 @@ export default function SurveyPage() {
   const [timeOpen, setTimeOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(null);
+  const [voteMessage, setVoteMessage] = useState('');
+  const [locationMessage, setLocationMessage] = useState('');
+  const [sharingLocation, setSharingLocation] = useState(false);
+  const [todayMyanmar, setTodayMyanmar] = useState(() => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Yangon' }).format(new Date()));
   const [room, setRoom] = useState(idleRoom);
   const [shakeSuggestion, setShakeSuggestion] = useState(false);
   const fetchGen = useRef(0);
@@ -43,6 +47,11 @@ export default function SurveyPage() {
 
   useEffect(() => {
     document.title = 'ပါဝင်ရန် · တွေ့ကြမယ်';
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setTodayMyanmar(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Yangon' }).format(new Date())), 60_000);
+    return () => window.clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -74,6 +83,10 @@ export default function SurveyPage() {
           fixedPlace: data.fixedPlace || '',
           responses: data.responses,
           suggestion: data.suggestion,
+          placeVotes: data.placeVotes,
+          confirmedDate: data.confirmedDate,
+          confirmedSlot: data.confirmedSlot,
+          locations: data.locations,
           message: '',
         });
       } catch (error) {
@@ -145,6 +158,10 @@ export default function SurveyPage() {
         fixedPlace: saved.fixedPlace || decidedPlace,
         responses: saved.responses,
         suggestion: saved.suggestion,
+        placeVotes: saved.placeVotes,
+        confirmedDate: saved.confirmedDate,
+        confirmedSlot: saved.confirmedSlot,
+        locations: saved.locations,
         message: '',
       });
       setName(checked.value.name);
@@ -156,6 +173,28 @@ export default function SurveyPage() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function onVote(placeName) {
+    if (!activeCode || !name || !phone) return;
+    try {
+      const result = await voteForPlace(activeCode, { name, phone }, placeName);
+      setRoom((current) => ({ ...current, placeVotes: result.placeVotes }));
+      setVoteMessage('မဲပေးမှုကို အမည်မဖော်ဘဲ သိမ်းပြီးပါပြီ။');
+    } catch (error) { setVoteMessage(error.message); }
+  }
+
+  async function onShareLocation() {
+    if (!navigator.geolocation || !name || !phone) { setLocationMessage('အမည်၊ ဖုန်းနံပါတ်နှင့် တည်နေရာခွင့်ပြုချက် လိုအပ်ပါသည်။'); return; }
+    setSharingLocation(true); setLocationMessage('');
+    navigator.geolocation.getCurrentPosition(async ({ coords }) => {
+      try {
+        const result = await shareLocation(activeCode, { name, phone }, coords.latitude, coords.longitude);
+        setRoom((current) => ({ ...current, locations: result.locations }));
+        setLocationMessage('တည်နေရာကို အဖွဲ့နှင့် မျှဝေပြီးပါပြီ။');
+      } catch (error) { setLocationMessage(error.message); }
+      finally { setSharingLocation(false); }
+    }, (error) => { setLocationMessage(error.code === 1 ? 'တည်နေရာခွင့်ပြုချက် လိုအပ်ပါသည်။' : 'လက်ရှိတည်နေရာကို ရယူမရပါ။'); setSharingLocation(false); }, { enableHighAccuracy: true, timeout: 15000 });
   }
 
   if (invalidLink) {
@@ -371,7 +410,15 @@ export default function SurveyPage() {
         ) : null}
       </section>
 
-      {activeCode ? <Assistant room={room} shake={shakeSuggestion} /> : null}
+      {activeCode ? <Assistant room={room} shake={shakeSuggestion} member={{ name, phone }} onVote={onVote} /> : null}
+      {voteMessage ? <p className="hint" role="status">{voteMessage}</p> : null}
+      {room.confirmedDate ? <section className="card location-card">
+        <h3>တွေ့ဆုံမည့်နေ့တွင် တည်နေရာမျှဝေရန်</h3>
+        <p className="hint">အတည်ပြုရက် — {new Intl.DateTimeFormat('my-MM', { dateStyle: 'full' }).format(new Date(`${room.confirmedDate}T12:00:00`))}</p>
+        <button type="button" className="btn" onClick={onShareLocation} disabled={sharingLocation || room.confirmedDate !== todayMyanmar || !name || !phone}>{sharingLocation ? 'တည်နေရာ ရယူနေပါတယ်…' : 'ကျွန်ုပ်၏တည်နေရာ မျှဝေမည်'}</button>
+        {room.confirmedDate !== todayMyanmar ? <p className="hint">တွေ့ဆုံမည့်ရက်ရောက်မှ မျှဝေနိုင်ပါမည်။</p> : null}
+        {locationMessage ? <p className="hint" role="status">{locationMessage}</p> : null}
+      </section> : null}
       <Organizer />
 
       {timeOpen ? (

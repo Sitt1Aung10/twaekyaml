@@ -1,13 +1,13 @@
 import { toMyanmarDigits } from '../../shared/meetup.js';
 
-export default function Assistant({ room, shake = false }) {
+export default function Assistant({ room, shake = false, member, onVote, organizer, onConfirmDate, confirmingDate = false }) {
   const suggestion = room.suggestion;
 
   return (
     <section className={shake ? 'card assistant suggestion-shake' : 'card assistant'} aria-live="polite">
       <p className="kicker">အထောက်အကူ AI</p>
       <h2>အဖွဲ့အတွက် အကြံပြုချက်</h2>
-      <p className="lede">အများစုရွေးတဲ့ ပုံစံအတွက် ရန်ကုန်မြို့နယ်အလိုက် နေရာတွေနဲ့၊ လူအားလုံးဆုံတဲ့ နေ့၊ အချိန်ကို ပြပါတယ်။</p>
+      <p className="lede">အဖွဲ့ဝင်များ အကြံပြုထားသော နေရာများကို မဲပေးပြီး၊ ပြက္ခဒိန်ရက်များထဲမှ ဆုံနိုင်မည့်အချိန်ကို ကြည့်ပါ။</p>
 
       {room.status === 'loading' ? <p>စစ်ဆေးနေပါတယ်…</p> : null}
       {room.status === 'missing' ? (
@@ -40,21 +40,30 @@ export default function Assistant({ room, shake = false }) {
           </ul>
 
           {suggestion.mentionedPlaces.length ? (
-            <>
-              <h3>အဖွဲ့က ရေးထားသော နေရာ</h3>
-              <ul className="place-list">
-                {suggestion.mentionedPlaces.map((item) => (
-                  <li key={item.place}>
-                    {item.place}
-                    <span> · {toMyanmarDigits(item.count)}</span>
-                  </li>
-                ))}
+            <div className="place-voting">
+              <h3>အကြံပြုနေရာ မဲပေးရန်</h3>
+              <p className="hint">မဲအရေအတွက်ကိုသာ ပြထားပြီး မဲပေးသူအမည်များကို မပြပါ။</p>
+              <ul className="place-vote-list">
+                {suggestion.mentionedPlaces.map(({ place }) => {
+                  const count = room.placeVotes?.find((vote) => vote.place === place)?.count || 0;
+                  return <li key={place}><span>{place}<strong>{toMyanmarDigits(count)} မဲ</strong></span>
+                    {onVote ? <button className="btn secondary" type="button" onClick={() => onVote(place)} disabled={!member?.name || !member?.phone}>မဲပေးမည်</button> : null}
+                  </li>;
+                })}
               </ul>
-            </>
+              {onVote && (!member?.name || !member?.phone) ? <p className="hint">မဲပေးရန် အရင်ဆုံး အမည်နှင့် ဖုန်းနံပါတ် ဖြည့်ပါ။</p> : null}
+            </div>
           ) : null}
 
           <h3>တွေ့ဆုံရန် အချိန်</h3>
           <p>{suggestion.time.text}</p>
+          <p className="hint">ဒီအချိန်မှာ မအားနိုင်သူ {toMyanmarDigits(suggestion.time.unavailable ?? (suggestion.total - suggestion.time.count))} ယောက်ရှိပါတယ်။</p>
+          {organizer && suggestion.time.date && !room.confirmedDate ? <button type="button" className="btn" disabled={confirmingDate} onClick={() => onConfirmDate?.(suggestion.time)}>{confirmingDate ? 'အတည်ပြုနေပါတယ်…' : 'ဤရက်ကို အတည်ပြုမည်'}</button> : null}
+          {room.confirmedDate ? <CalendarLink date={room.confirmedDate} start={room.confirmedSlot?.start} end={room.confirmedSlot?.end} place={suggestion.mentionedPlaces[0]?.place || ''} /> : null}
+          {room.confirmedDate && room.locations?.length ? <div className="location-card">
+            <h3>မျှဝေထားသော တည်နေရာများ</h3>
+            <ul className="location-list">{room.locations.map((location) => <li key={`${location.name}-${location.sharedAt}`}><strong>{location.name}</strong><a href={`https://www.google.com/maps?q=${location.latitude},${location.longitude}`} target="_blank" rel="noreferrer">မြေပုံဖွင့်ရန်</a></li>)}</ul>
+          </div> : null}
 
           <h3>ရောက်ရှိချိန်</h3>
           <p>{suggestion.arrival.text}</p>
@@ -64,39 +73,21 @@ export default function Assistant({ room, shake = false }) {
             စစ်ဆေးနေပါတယ်။
           </p>
 
-          <h3>သွားလို့ရသော နေရာ</h3>
-          {suggestion.venues.map((venue) => (
-            <div className="venue-block" key={venue.style}>
-              <h4>{venue.label}</h4>
-              <p>{venue.intro}</p>
-              {(venue.townships?.length ? venue.townships : [{
-                township: '',
-                townshipMm: '',
-                places: (venue.places || []).map((place) => (
-                  typeof place === 'string' ? { name: place, address: '', detail: '' } : place
-                )),
-              }]).map((group) => (
-                <div className="township-block" key={group.township || venue.style}>
-                  {group.townshipMm ? <h5>{group.townshipMm} မြို့နယ်</h5> : null}
-                  <ul className="place-list">
-                    {group.places.map((place) => (
-                      <li key={`${place.name}-${place.address}`}>
-                        <strong>{place.name}</strong>
-                        {place.address ? <span className="place-meta">{place.address}</span> : null}
-                        {place.detail ? <span className="place-meta">{place.detail}</span> : null}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          ))}
-
-
-
-
         </>
       ) : null}
     </section>
   );
+}
+
+function CalendarLink({ date, start, end, place }) {
+  const day = date.replaceAll('-', '');
+  const dates = start && end ? `${day}T${start.replace(':', '')}00/${day}T${end.replace(':', '')}00` : `${day}/${day}`;
+  const url = new URL('https://calendar.google.com/calendar/render');
+  url.searchParams.set('action', 'TEMPLATE');
+  url.searchParams.set('text', 'သူငယ်ချင်းများ တွေ့ဆုံပွဲ');
+  url.searchParams.set('dates', dates);
+  if (start && end) url.searchParams.set('ctz', 'Asia/Yangon');
+  url.searchParams.set('details', 'တွေ့ဆုံမည့်ရက်ကို တွေ့ကြမယ် ဝက်ဘ်ဆိုက်တွင် စီစဉ်သူက အတည်ပြုပြီးပါပြီ။');
+  if (place) url.searchParams.set('location', place);
+  return <p><a className="btn secondary" href={url.toString()} target="_blank" rel="noreferrer">Google Calendar ထဲသို့ သိမ်းမည်</a></p>;
 }

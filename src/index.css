@@ -565,25 +565,6 @@ textarea { resize: vertical; min-height: 6.2rem; }
   border-radius: inherit;
 }
 
-.venue-block {
-  margin-bottom: 0.8rem;
-  padding-bottom: 0.3rem;
-}
-
-.township-block { margin: 0.15rem 0 0.85rem; }
-
-.township-block h5 {
-  margin: 0.15rem 0 0.25rem;
-  font-size: 1rem;
-}
-
-.place-meta {
-  display: block;
-  color: var(--ink-soft);
-  font-weight: 500;
-  font-size: 0.95rem;
-}
-
 .place-list li {
   position: relative;
   padding: 0.35rem 0 0.35rem 1.1rem;
@@ -599,6 +580,33 @@ textarea { resize: vertical; min-height: 6.2rem; }
   background: var(--marigold);
   transform: rotate(45deg);
 }
+
+.place-voting { margin: 0.8rem 0 1rem; }
+
+.place-vote-list, .location-list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.place-vote-list li, .location-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.place-vote-list li > span { display: grid; gap: 0.15rem; }
+.place-vote-list strong { color: var(--jade-mid); font-size: 0.9rem; }
+.calendar-tools { display: grid; gap: 0.55rem; margin-bottom: 0.75rem; }
+.location-card { display: grid; gap: 0.5rem; }
+.location-card p { margin-bottom: 0; }
 
 .tabs {
   display: flex;
@@ -857,6 +865,7 @@ textarea { resize: vertical; min-height: 6.2rem; }
   .card.survey-card { padding: 0.6rem 0.8rem 0.7rem; }
 
   .time-range { grid-template-columns: 1fr 1fr; }
+  .calendar-tools { grid-template-columns: 1fr 1fr; align-items: center; }
 
   .modal-backdrop {
     align-items: center;

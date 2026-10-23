@@ -8,7 +8,8 @@ import {
   normalizeJoinCode,
   styleLabel,
 } from '../../shared/meetup.js';
-import { getResponses } from '../api.js';
+import { confirmDate, getResponses, voteForPlace } from '../api.js';
+import { readSession } from '../session.js';
 import AppShell from './AppShell.jsx';
 import Assistant from './Assistant.jsx';
 
@@ -38,8 +39,16 @@ export default function MembersPage() {
     status: code ? 'loading' : 'invalid',
     responses: [],
     suggestion: null,
+    placeVotes: [],
+    confirmedDate: '',
+    confirmedSlot: null,
+    locations: [],
     message: code ? '' : MESSAGES.room,
   });
+  const organizer = readSession();
+  const [confirmingDate, setConfirmingDate] = useState(false);
+  const [message, setMessage] = useState('');
+  const [voter, setVoter] = useState({ name: '', phone: '' });
 
   useEffect(() => {
     if (!code) return undefined;
@@ -53,6 +62,10 @@ export default function MembersPage() {
             status: 'ready',
             responses: data.responses,
             suggestion: data.suggestion,
+            placeVotes: data.placeVotes,
+            confirmedDate: data.confirmedDate,
+            confirmedSlot: data.confirmedSlot,
+            locations: data.locations,
             message: '',
           });
         }
@@ -75,9 +88,33 @@ export default function MembersPage() {
     };
   }, [code]);
 
+  async function onConfirmDate(slot) {
+    setConfirmingDate(true); setMessage('');
+    try {
+      const result = await confirmDate(code, organizer, slot);
+      setRoom((current) => ({ ...current, confirmedDate: result.confirmedDate, confirmedSlot: result.confirmedSlot }));
+      setMessage('တွေ့ဆုံမည့်ရက်ကို အတည်ပြုပြီးပါပြီ။');
+    } catch (error) { setMessage(error.message); }
+    finally { setConfirmingDate(false); }
+  }
+
+  async function onVote(place) {
+    try {
+      const result = await voteForPlace(code, voter, place);
+      setRoom((current) => ({ ...current, placeVotes: result.placeVotes }));
+      setMessage('မဲပေးမှုကို အမည်မဖော်ဘဲ သိမ်းပြီးပါပြီ။');
+    } catch (error) { setMessage(error.message); }
+  }
+
   return (
     <AppShell code={code}>
-      {room.status === 'ready' ? <Assistant room={room} /> : null}
+      {room.status === 'ready' && room.suggestion?.mentionedPlaces?.length ? <section className="card vote-access">
+        <h3>အကြံပြုနေရာ မဲပေးရန်</h3>
+        <p className="hint">မဲပေးသူကို အဖွဲ့ဝင်အဖြစ် စစ်ဆေးရန် ဖြည့်ထားသော အမည်နှင့်ဖုန်းကို ထည့်ပါ။ မဲအရေအတွက်သာ လူတိုင်းမြင်ရပါမည်။</p>
+        <div className="form-row"><input aria-label="မဲပေးသူအမည်" placeholder="အမည်" value={voter.name} onChange={(event) => setVoter((current) => ({ ...current, name: event.target.value }))} /><input aria-label="မဲပေးသူဖုန်း" placeholder="ဖုန်းနံပါတ်" value={voter.phone} onChange={(event) => setVoter((current) => ({ ...current, phone: event.target.value }))} /></div>
+      </section> : null}
+      {room.status === 'ready' ? <Assistant room={room} member={voter} onVote={onVote} organizer={organizer} onConfirmDate={onConfirmDate} confirmingDate={confirmingDate} /> : null}
+      {message ? <p className="hint" role="status">{message}</p> : null}
       <section className="card member-page">
         <p className="kicker">စီစဉ်သူ</p>
         <h2>{code ? `အခန်း ${code} ၏ အဖွဲ့ဝင်များ` : 'အဖွဲ့ဝင် အဖြေများ'}</h2>
