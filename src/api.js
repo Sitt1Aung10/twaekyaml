@@ -1,7 +1,7 @@
 import { buildSuggestion } from '../shared/meetup.js';
 
 const LEGACY_API_BASE_URL = 'https://twaekyamlbe.hermesmyanmar.com';
-const API_BASE_URL = '/api';
+const API_BASE_URL = LEGACY_API_BASE_URL;
 
 async function request(path, options = {}) {
   let response;
