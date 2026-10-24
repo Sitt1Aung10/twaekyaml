@@ -57,7 +57,7 @@ function randomCode(existing) {
   const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   for (let attempt = 0; attempt < 40; attempt += 1) {
     let code = '';
-    for (let index = 0; index < 4; index += 1) {
+    for (let index = 0; index < 5; index += 1) {
       code += letters[Math.floor(Math.random() * letters.length)];
     }
     if (!existing[code]) return code;
@@ -168,6 +168,7 @@ export function getResponses(rawCode) {
     const responses = sortedResponses(meeting).map(publicResponse);
     return {
       code,
+      organizer: meeting.organizer || null,
       responses,
       suggestion: buildSuggestion(responses),
       placeVotes: Object.entries(meeting.votes || {}).map(([place, ids]) => ({ place, count: ids.length })),
@@ -214,7 +215,9 @@ export function confirmDate(rawCode, body) {
     const suggested = buildSuggestion(sortedResponses(meeting).map(publicResponse)).time;
     const start = String(body?.start || '');
     const end = String(body?.end || '');
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || suggested.date !== date || suggested.start !== start || suggested.end !== end) throw new HttpError(400, 'date', 'အကြံပြုထားသော ရက်နှင့်အချိန်ကို ရွေးပါ။');
+    const options = suggested.options?.length ? suggested.options : [suggested];
+    const allowed = options.some((option) => option.date === date && option.start === start && option.end === end);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !allowed) throw new HttpError(400, 'date', 'အကြံပြုထားသော ရက်နှင့်အချိန်ကို ရွေးပါ။');
     meeting.confirmedDate = date;
     meeting.confirmedSlot = { date, start, end };
     await writeDb(db);

@@ -196,11 +196,11 @@ export default function Organizer() {
               autoCapitalize="characters"
               autoCorrect="off"
               spellCheck="false"
-              maxLength={4}
+              maxLength={5}
               placeholder="အခန်းကုဒ်"
               aria-label="အခန်းကုဒ်"
               onChange={(event) => {
-                setLookup(event.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 4));
+                setLookup(event.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 5));
                 setLookupError('');
               }}
             />

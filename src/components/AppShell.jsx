@@ -8,12 +8,15 @@ export default function AppShell({ code, children, dense = false }) {
           <Link to="/" className="wordmark">
             တွေ့ကြမယ်
           </Link>
-          {code ? (
-            <p className="code-pill">
-              <span>အခန်းကုဒ်</span>
-              <strong>{code}</strong>
-            </p>
-          ) : null}
+          <div className="topbar-end">
+            {code ? (
+              <p className="code-pill">
+                <span>အခန်းကုဒ်</span>
+                <strong>{code}</strong>
+              </p>
+            ) : null}
+            <img className="nav-logo" src="/twaekyaml-logo.jpg" alt="twaekyaml" width="102" height="54" />
+          </div>
         </div>
       </header>
       <main className={dense ? 'site-page site-page-dense' : 'site-page'}>{children}</main>

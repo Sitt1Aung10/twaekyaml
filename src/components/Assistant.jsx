@@ -1,7 +1,9 @@
-import { toMyanmarDigits } from '../../shared/meetup.js';
+import { formatClock, organizerLabel, sameOrganizer, toMyanmarDigits } from '../../shared/meetup.js';
 
-export default function Assistant({ room, shake = false, member, onVote, organizer, onConfirmDate, confirmingDate = false }) {
+export default function Assistant({ room, shake = false, member, onVote, organizer, onConfirmDate, confirmingDate = false, canConfirmPlace = true }) {
   const suggestion = room.suggestion;
+  const roomOrganizer = room.organizer || null;
+  const canConfirmDate = sameOrganizer(organizer, roomOrganizer);
 
   return (
     <section className={shake ? 'card assistant suggestion-shake' : 'card assistant'} aria-live="polite">
@@ -56,10 +58,37 @@ export default function Assistant({ room, shake = false, member, onVote, organiz
           ) : null}
 
           <h3>တွေ့ဆုံရန် အချိန်</h3>
-          <p>{suggestion.time.text}</p>
-          <p className="hint">ဒီအချိန်မှာ မအားနိုင်သူ {toMyanmarDigits(suggestion.time.unavailable ?? (suggestion.total - suggestion.time.count))} ယောက်ရှိပါတယ်။</p>
-          {organizer && suggestion.time.date && !room.confirmedDate ? <button type="button" className="btn" disabled={confirmingDate} onClick={() => onConfirmDate?.(suggestion.time)}>{confirmingDate ? 'အတည်ပြုနေပါတယ်…' : 'ဤရက်ကို အတည်ပြုမည်'}</button> : null}
-          {room.confirmedDate ? <CalendarLink date={room.confirmedDate} start={room.confirmedSlot?.start} end={room.confirmedSlot?.end} place={suggestion.mentionedPlaces[0]?.place || ''} /> : null}
+          <BestDays time={suggestion.time} />
+          {suggestion.time.date && !room.confirmedDate ? (
+            <div className="confirm-date-row">
+              {canConfirmDate ? (suggestion.time.options?.length ? suggestion.time.options : [suggestion.time]).map((option) => (
+                <button
+                  type="button"
+                  className="btn"
+                  key={`${option.date}-${option.start}-${option.end}`}
+                  disabled={confirmingDate || !canConfirmPlace}
+                  onClick={() => onConfirmDate?.(option)}
+                >
+                  {confirmingDate ? 'အတည်ပြုနေပါတယ်…' : (
+                    <>
+                      အတည်ပြုမည် — <strong>{option.dayLabel || option.date}</strong>
+                      {option.start && option.end ? ` ${formatClock(option.start)}–${formatClock(option.end)}` : ''}
+                    </>
+                  )}
+                </button>
+              )) : null}
+              <p className="confirm-date-alert" role="status">
+                Only organizer can confirm the date.
+                {roomOrganizer ? (
+                  <>
+                    {' '}
+                    ဤအခန်း ({room.code || '—'}) ၏ စီစဉ်သူ — <strong>{organizerLabel(roomOrganizer)}</strong>
+                  </>
+                ) : null}
+              </p>
+            </div>
+          ) : null}
+          {room.confirmedDate ? <CalendarLink date={room.confirmedDate} start={room.confirmedSlot?.start} end={room.confirmedSlot?.end} place={room.confirmedPlace || suggestion.mentionedPlaces[0]?.place || ''} /> : null}
           {room.confirmedDate && room.locations?.length ? <div className="location-card">
             <h3>မျှဝေထားသော တည်နေရာများ</h3>
             <ul className="location-list">{room.locations.map((location) => <li key={`${location.name}-${location.sharedAt}`}><strong>{location.name}</strong><a href={`https://www.google.com/maps?q=${location.latitude},${location.longitude}`} target="_blank" rel="noreferrer">မြေပုံဖွင့်ရန်</a></li>)}</ul>
@@ -76,6 +105,33 @@ export default function Assistant({ room, shake = false, member, onVote, organiz
         </>
       ) : null}
     </section>
+  );
+}
+
+function BestDays({ time }) {
+  const options = time.options?.length ? time.options : [];
+  if (!options.length) return <p>{time.text}</p>;
+  return (
+    <ul className="best-days">
+      {options.map((option) => (
+        <li key={`${option.date}-${option.start}-${option.end}`}>
+          <p>
+            <mark className="best-day-mark"><strong>{option.dayLabel}</strong></mark>
+            {' '}
+            {formatClock(option.start)}–{formatClock(option.end)}
+            {' '}
+            · {toMyanmarDigits(option.count)} ယောက် တက်နိုင်ပါတယ်
+          </p>
+          {option.unavailableNames?.length ? (
+            <p className="unavailable-names">
+              မအားနိုင်သူ — {option.unavailableNames.map((name, index) => <strong key={`${option.date}-${index}`}>{name}</strong>)}
+            </p>
+          ) : (
+            <p className="hint">ဒီရက်မှာ လူအားလုံး အားပါတယ်။</p>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }
 

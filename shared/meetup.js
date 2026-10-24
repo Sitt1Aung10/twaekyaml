@@ -40,7 +40,7 @@ const MONTHS = [
 ];
 
 export const MESSAGES = {
-  room: 'အခန်းနံပါတ်သည် အင်္ဂလိပ်အက္ခရာ ၁ လုံးမှ ၄ လုံးအထိ ဖြစ်ရပါမည်။',
+  room: 'အခန်းနံပါတ်သည် အင်္ဂလိပ်အက္ခရာ ၄ လုံး သို့မဟုတ် ၅ လုံး ဖြစ်ရပါမည်။',
   name: 'အမည် ထည့်ပါ။',
   nameLong: 'အမည် အလွန်ရှည်နေပါတယ်။',
   phone: 'ဖုန်းနံပါတ် မမှန်ပါ။ ၀၉… သို့မဟုတ် +၉၅၉… ပုံစံကို သုံးပါ။',
@@ -78,7 +78,7 @@ export function styleLabel(styleId) {
 export function normalizeJoinCode(input) {
   if (typeof input !== 'string') return '';
   const code = input.trim().toUpperCase();
-  return /^[A-Z]{1,4}$/.test(code) ? code : '';
+  return /^[A-Z]{4,5}$/.test(code) ? code : '';
 }
 
 export function normalizeTime(value) {
@@ -261,6 +261,11 @@ export function organizerLabel(organizer) {
   return `${organizer.name} · ${organizer.phone}`;
 }
 
+export function sameOrganizer(a, b) {
+  if (!a || !b) return false;
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
 function joinList(items) {
   if (items.length <= 1) return items[0] ?? '';
   if (items.length === 2) return `${items[0]} နှင့် ${items[1]}`;
@@ -312,9 +317,31 @@ function effectiveInterval(start, end, arrival) {
   return { start: from, end };
 }
 
+function calendarDayLabel(date) {
+  return new Intl.DateTimeFormat('my-MM', { dateStyle: 'full' }).format(new Date(`${date}T12:00:00`));
+}
+
 function slotLabel(date, start, end) {
-  const dateLabel = new Intl.DateTimeFormat('my-MM', { dateStyle: 'full' }).format(new Date(`${date}T12:00:00`));
-  return `${dateLabel} ${formatClock(minutesToClock(start))}–${formatClock(minutesToClock(end))}`;
+  return `${calendarDayLabel(date)} ${formatClock(minutesToClock(start))}–${formatClock(minutesToClock(end))}`;
+}
+
+function unavailableNames(responses, ids) {
+  const available = new Set(ids || []);
+  return responses
+    .filter((response) => response?.id && !available.has(response.id))
+    .map((response) => response.name)
+    .filter(Boolean);
+}
+
+function timeOption(responses, candidate) {
+  return {
+    date: candidate.date,
+    start: minutesToClock(candidate.start),
+    end: minutesToClock(candidate.end),
+    count: candidate.count,
+    dayLabel: calendarDayLabel(candidate.date),
+    unavailableNames: unavailableNames(responses, candidate.ids),
+  };
 }
 
 const NOON_MINUTES = 12 * 60;
@@ -417,23 +444,13 @@ function recommendTime(responses) {
   });
 
   const best = candidates[0];
-  const slot = slotLabel(best.date, best.start, best.end);
+  const tied = candidates.filter((candidate) => candidate.count === best.count);
+  const options = tied.map((candidate) => timeOption(responses, candidate));
+  const labels = tied.map((candidate) => slotLabel(candidate.date, candidate.start, candidate.end));
   const unavailable = total - best.count;
-  let text;
-  if (everyone) {
-    text = `လူအားလုံး (${toMyanmarDigits(total)} ယောက်) ${slot} မှာ တွေ့နိုင်ပါတယ်။`;
-  } else {
-    const alternate = candidates.find(
-      (candidate) =>
-        candidate.date !== best.date &&
-        candidate.count === best.count &&
-        candidate.end - candidate.start === best.end - best.start,
-    );
-    text = `လူအားလုံး တစ်ချိန်တည်း မဆုံပါ။ အများဆုံးဆုံတဲ့အချိန်က ${slot} ဖြစ်ပြီး ${toMyanmarDigits(best.count)} ယောက် တက်နိုင်ပါတယ်။`;
-    if (alternate) {
-      text += ` လူအရေအတွက်တူတဲ့ နောက်ထပ်အချိန်က ${slotLabel(alternate.date, alternate.start, alternate.end)} ဖြစ်ပါတယ်။`;
-    }
-  }
+  const text = everyone
+    ? `လူအားလုံး (${toMyanmarDigits(total)} ယောက်) ${joinList(labels)} မှာ တွေ့နိုင်ပါတယ်။`
+    : `လူအားလုံး တစ်ချိန်တည်း မဆုံပါ။ အများဆုံး ${toMyanmarDigits(best.count)} ယောက် ဆုံနိုင်သော ရက်မှာ ${joinList(labels)} ဖြစ်ပါတယ်။`;
 
   return {
     everyone,
@@ -441,11 +458,13 @@ function recommendTime(responses) {
     total,
     date: best.date,
     unavailable,
+    unavailableNames: options[0]?.unavailableNames ?? [],
     start: minutesToClock(best.start),
     end: minutesToClock(best.end),
     startMinutes: best.start,
     endMinutes: best.end,
     ids: best.ids ?? [],
+    options,
     text,
   };
 }

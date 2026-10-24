@@ -1,0 +1,5 @@
+
+User-agent: *
+Allow: /
+
+Sitemap: https://twaekyaml.hermesmyanmar.com/sitemap.xml

@@ -6,9 +6,10 @@ import {
   formatClock,
   formatSubmitted,
   normalizeJoinCode,
+  sameOrganizer,
   styleLabel,
 } from '../../shared/meetup.js';
-import { confirmDate, getResponses, voteForPlace } from '../api.js';
+import { confirmDate, getMeeting, getResponses, voteForPlace } from '../api.js';
 import { readSession } from '../session.js';
 import AppShell from './AppShell.jsx';
 import Assistant from './Assistant.jsx';
@@ -37,6 +38,8 @@ export default function MembersPage() {
   const code = normalizeJoinCode(params.code || '');
   const [room, setRoom] = useState({
     status: code ? 'loading' : 'invalid',
+    code,
+    organizer: null,
     responses: [],
     suggestion: null,
     placeVotes: [],
@@ -45,21 +48,37 @@ export default function MembersPage() {
     locations: [],
     message: code ? '' : MESSAGES.room,
   });
-  const organizer = readSession();
+  const session = readSession();
+  const isRoomOrganizer = sameOrganizer(session, room.organizer);
   const [confirmingDate, setConfirmingDate] = useState(false);
   const [message, setMessage] = useState('');
   const [voter, setVoter] = useState({ name: '', phone: '' });
+  const [confirmedPlace, setConfirmedPlace] = useState('');
 
   useEffect(() => {
     if (!code) return undefined;
     let stop = false;
 
+    async function loadOrganizer() {
+      try {
+        const meeting = await getMeeting(code);
+        if (!stop) {
+          setRoom((current) => ({ ...current, code, organizer: meeting.organizer || null }));
+        }
+      } catch {
+        if (!stop) setRoom((current) => ({ ...current, code, organizer: null }));
+      }
+    }
+
     async function load() {
       try {
         const data = await getResponses(code);
         if (!stop) {
-          setRoom({
+          setRoom((current) => ({
+            ...current,
             status: 'ready',
+            code,
+            organizer: data.organizer || current.organizer,
             responses: data.responses,
             suggestion: data.suggestion,
             placeVotes: data.placeVotes,
@@ -67,19 +86,22 @@ export default function MembersPage() {
             confirmedSlot: data.confirmedSlot,
             locations: data.locations,
             message: '',
-          });
+          }));
         }
       } catch (error) {
         if (stop) return;
-        setRoom({
+        setRoom((current) => ({
+          ...current,
           status: error.status === 404 ? 'missing' : 'error',
+          code,
           responses: [],
           suggestion: null,
           message: error.message,
-        });
+        }));
       }
     }
 
+    loadOrganizer();
     load();
     const timer = setInterval(load, 4000);
     return () => {
@@ -91,8 +113,8 @@ export default function MembersPage() {
   async function onConfirmDate(slot) {
     setConfirmingDate(true); setMessage('');
     try {
-      const result = await confirmDate(code, organizer, slot);
-      setRoom((current) => ({ ...current, confirmedDate: result.confirmedDate, confirmedSlot: result.confirmedSlot }));
+      const result = await confirmDate(code, session, slot, confirmedPlace);
+      setRoom((current) => ({ ...current, confirmedDate: result.confirmedDate, confirmedSlot: result.confirmedSlot, confirmedPlace: result.confirmedPlace }));
       setMessage('တွေ့ဆုံမည့်ရက်ကို အတည်ပြုပြီးပါပြီ။');
     } catch (error) { setMessage(error.message); }
     finally { setConfirmingDate(false); }
@@ -113,7 +135,8 @@ export default function MembersPage() {
         <p className="hint">မဲပေးသူကို အဖွဲ့ဝင်အဖြစ် စစ်ဆေးရန် ဖြည့်ထားသော အမည်နှင့်ဖုန်းကို ထည့်ပါ။ မဲအရေအတွက်သာ လူတိုင်းမြင်ရပါမည်။</p>
         <div className="form-row"><input aria-label="မဲပေးသူအမည်" placeholder="အမည်" value={voter.name} onChange={(event) => setVoter((current) => ({ ...current, name: event.target.value }))} /><input aria-label="မဲပေးသူဖုန်း" placeholder="ဖုန်းနံပါတ်" value={voter.phone} onChange={(event) => setVoter((current) => ({ ...current, phone: event.target.value }))} /></div>
       </section> : null}
-      {room.status === 'ready' ? <Assistant room={room} member={voter} onVote={onVote} organizer={organizer} onConfirmDate={onConfirmDate} confirmingDate={confirmingDate} /> : null}
+      {room.status === 'ready' && isRoomOrganizer && room.suggestion?.mentionedPlaces?.length && !room.confirmedDate ? <section className="card"><h3>အတည်ပြုမည့်နေရာ</h3><select value={confirmedPlace} onChange={(event) => setConfirmedPlace(event.target.value)}><option value="">နေရာရွေးပါ</option>{room.suggestion.mentionedPlaces.map(({ place }) => <option key={place} value={place}>{place}</option>)}</select></section> : null}
+      {room.status === 'ready' ? <Assistant room={room} member={voter} onVote={onVote} organizer={session} onConfirmDate={onConfirmDate} confirmingDate={confirmingDate} canConfirmPlace={!room.suggestion?.mentionedPlaces?.length || Boolean(confirmedPlace)} /> : null}
       {message ? <p className="hint" role="status">{message}</p> : null}
       <section className="card member-page">
         <p className="kicker">စီစဉ်သူ</p>

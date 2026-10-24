@@ -56,11 +56,16 @@ export function createMeeting(organizer) {
   return request('/legacy/recordHistory.php', { method: 'POST', body: JSON.stringify({ action: 'create_meeting', organizer }) });
 }
 
+export function getMeeting(code) {
+  return request(`/meetings/${encodeURIComponent(code)}`);
+}
+
 export async function getResponses(code) {
   const data = await request(`/legacy/index.php?room=${encodeURIComponent(code)}`);
   const responses = (data.members || []).map(memberToResponse);
   return {
     code: data.room,
+    organizer: data.organizer || null,
     fixedPlace: data.fixedPlace || '',
     responses,
     suggestion: buildSuggestion(responses, data.places || []),
@@ -93,9 +98,9 @@ export function voteForPlace(code, member, place) {
   });
 }
 
-export function confirmDate(code, organizer, slot) {
+export function confirmDate(code, organizer, slot, place) {
   return request(`/meetings/${encodeURIComponent(code)}/confirmation`, {
-    method: 'POST', body: JSON.stringify({ organizer, ...slot }),
+    method: 'POST', body: JSON.stringify({ organizer, ...slot, place }),
   });
 }
 
