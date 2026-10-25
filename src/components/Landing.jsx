@@ -9,10 +9,17 @@ export default function Landing() {
   return (
     <main className="landing">
       <div className="landing-wave" aria-hidden="true" />
+      <div className="lanterns" aria-hidden="true">
+        <img className="lantern lantern-orange" src="/lantern-orange.png" alt="" />
+        <img className="lantern lantern-green" src="/lantern-green.png" alt="" />
+        <img className="lantern lantern-pink" src="/lantern-pink.png" alt="" />
+        <img className="lantern lantern-purple" src="/lantern-purple.png" alt="" />
+      </div>
       <header className="landing-bar">
         <img className="nav-logo" src="/twaekyaml-logo.jpg" alt="twaekyaml" width="102" height="54" />
       </header>
       <div className="landing-card">
+        <img className="landing-banner" src="/mee-pone-banner.jpg" alt="မီးပုံးပွဲတော်" />
         <p className="eyebrow">ဟေး</p>
         <h1 className="landing-title">တွေ့ကြမယ်</h1>
         <div className="ornament" aria-hidden="true">
