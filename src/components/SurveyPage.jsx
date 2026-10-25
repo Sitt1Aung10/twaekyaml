@@ -227,7 +227,7 @@ export default function SurveyPage() {
   }
 
   return (
-    <AppShell code={activeCode} dense>
+    <AppShell code={activeCode} dense banner>
       <section className="card survey-card">
         <h5>တွေ့ဆုံမည့် အချက်အလက်</h5>
         <p className="lede">ဒီဝက်ဘ်ဆိုက်စာမျက်နှာမှာ အခန်းတစ်ခန်းအတွက် နေရာနဲ့ အချိန်ကို ဖြည့်ပါ။</p>

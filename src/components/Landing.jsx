@@ -19,7 +19,6 @@ export default function Landing() {
         <img className="nav-logo" src="/twaekyaml-logo.jpg" alt="twaekyaml" width="102" height="54" />
       </header>
       <div className="landing-card">
-        <img className="landing-banner" src="/mee-pone-banner.jpg" alt="မီးပုံးပွဲတော်" />
         <p className="eyebrow">ဟေး</p>
         <h1 className="landing-title">တွေ့ကြမယ်</h1>
         <div className="ornament" aria-hidden="true">

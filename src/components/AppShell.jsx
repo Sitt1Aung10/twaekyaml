@@ -1,10 +1,15 @@
 import { Link } from 'react-router-dom';
 
-export default function AppShell({ code, children, dense = false }) {
+export default function AppShell({ code, children, dense = false, banner = false }) {
+  const barClass = ['topbar', dense ? 'topbar-dense' : '', banner ? 'topbar-banner' : ''].filter(Boolean).join(' ');
   return (
     <>
-      <header className={dense ? 'topbar topbar-dense' : 'topbar'}>
-        <img className="topbar-art" src="/candle-lights.jpg" alt="" />
+      <header className={barClass}>
+        {banner ? (
+          <img className="topbar-banner-img" src="/mee-pone-banner.jpg" alt="" />
+        ) : (
+          <img className="topbar-art" src="/candle-lights.jpg" alt="" />
+        )}
         <div className="topbar-inner">
           <Link to="/" className="wordmark">
             တွေ့ကြမယ်
