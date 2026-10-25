@@ -271,6 +271,8 @@ a { color: var(--jade-mid); }
   object-fit: cover;
   object-position: center 48%;
   border-radius: 0.85rem;
+  position :relative;
+  top : 10px;
 }
 
 .topbar-dense .nav-logo {
@@ -284,9 +286,9 @@ a { color: var(--jade-mid); }
   display: flex;
   align-items: baseline;
   gap: 0.45rem;
-  margin: 0;
+  margin: 0 auto;
   color: var(--ink-soft);
-  font-size: 0.92rem;
+  font-size: 0.8rem;
 }
 
 .code-pill strong, .locked-code strong, .created-code, .code-input {
@@ -494,7 +496,7 @@ textarea { resize: vertical; min-height: 6.2rem; }
 
 .topbar-dense .topbar-inner { min-height: 2.7rem; }
 
-.topbar-dense .wordmark { font-size: 1.15rem; }
+.topbar-dense .wordmark { font-size: .8rem; margin-top : 20px }
 
 .site-page-dense {
   padding: 2.2rem 0 1.6rem;
