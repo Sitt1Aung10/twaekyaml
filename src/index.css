@@ -270,6 +270,21 @@ a { color: var(--jade-mid); }
   border-bottom: 0;
 }
 
+.topbar-art {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4.2rem;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0.2;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.topbar-dense .topbar-art { height: 2.7rem; }
+
 .topbar::after {
   content: "";
   display: block;
@@ -286,6 +301,8 @@ a { color: var(--jade-mid); }
 }
 
 .topbar-inner {
+  position: relative;
+  z-index: 1;
   width: min(960px, calc(100% - 1.5rem));
   margin: 0 auto;
   min-height: 4.2rem;

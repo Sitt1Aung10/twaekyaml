@@ -4,6 +4,7 @@ export default function AppShell({ code, children, dense = false }) {
   return (
     <>
       <header className={dense ? 'topbar topbar-dense' : 'topbar'}>
+        <img className="topbar-art" src="/candle-lights.jpg" alt="" />
         <div className="topbar-inner">
           <Link to="/" className="wordmark">
             တွေ့ကြမယ်
